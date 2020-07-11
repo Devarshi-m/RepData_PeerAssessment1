@@ -1,0 +1,96 @@
+---
+title: "Reproducible Research Course Project 1"
+author: "Devarshi Mukherji"
+date: "7/11/2020"
+output: html_document
+---
+
+## Read in the data
+``` {r, echo = TRUE}
+setwd("C:/Devarshi's Work/Coursera/Reproducible Research/Week 2/repdata_data_activity")
+data <- read.csv("activity.csv")
+```
+
+Exploratory Analysis of the Data
+```{r}
+names(data)
+str(data)
+head(data)
+sum(is.na(data$steps))
+```
+
+## Create Histogram of number of steps in a day
+``` {r, echo = TRUE}
+stepsAday <- aggregate(data$steps ~ data$date, data, sum, na.rm = TRUE)
+png("plot1.png", width = 480, height = 480)
+hist(stepsAday$`data$steps`)
+dev.off()
+hist(stepsAday$`data$steps`)
+```
+
+## Caclculate Mean and Median Steps taken per day
+``` {r, echo = TRUE}
+meanSteps <- mean(stepsAday$`data$steps`)
+print(meanSteps)
+medianSteps <- median(stepsAday$`data$steps`)
+print(medianSteps)
+```
+
+## Time series plot of average number of steps taken
+``` {r, echo = TRUE}
+meanStepsAday <- aggregate(steps ~ interval, data, mean, na.rm = TRUE)
+png("plot2.png", width = 480, height = 480)
+plot(steps~interval, meanStepsAday, type = "l")
+dev.off()
+plot(steps~interval, meanStepsAday, type = "l")
+```
+
+## Find the 5 minute interval that contains the max number of steps on average
+``` {r, echo = TRUE}
+maxSteps <- meanStepsAday[which.max(meanStepsAday$steps),]$interval
+print(maxSteps)
+```
+
+## Imputing missing Data
+``` {r, echo = TRUE}
+missings <- sum(is.na(data$steps))
+print(missings)
+averageOfInterval <- function (interval) { 
+  meanStepsAday[meanStepsAday$interval==interval, ]$steps  
+}
+imputedData <- data
+for (i in 1:nrow(imputedData)) {
+  if(is.na(imputedData[i,]$steps)) {
+    imputedData[i,]$steps <- averageOfInterval(imputedData[i,]$interval)
+  }
+}
+```
+
+## Histogram of the total number of steps taken each day after missing values are imputed
+``` {r, echo = TRUE}
+imputedStepsAday <- aggregate(steps ~ date, imputedData, sum)
+png("plot3.png", width = 480, height = 480)
+hist(imputedStepsAday$steps)
+dev.off()
+hist(imputedStepsAday$steps)
+```
+
+## Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+``` {r, echo  = TRUE}
+imputedData$date <- as.Date(strptime(imputedData$date, format = "%Y-%m-%d"))
+imputedData$day <- weekdays(imputedData$date)
+for (i in 1:nrow(imputedData)) {
+  if (imputedData[i,]$day %in% c("Saturday", "Sunday")) {
+    imputedData[i,]$day <- "weekend"
+  } else {
+    imputedData[i,]$day <- "weekday"
+  }
+}
+weekSplit <- aggregate(imputedData$steps ~ imputedData$interval + imputedData$day, imputedData, mean)
+names(weekSplit) <- c("interval", "day", "steps")
+png("plot4.png", width = 480, height = 480)
+library(lattice)
+xyplot(steps ~ interval | day, weekSplit, type = "h", layout = c(1, 2), xlab = "time", ylab = "steps")
+dev.off()
+xyplot(steps ~ interval | day, weekSplit, type = "h", layout = c(1, 2), xlab = "time", ylab = "steps")
+```
